@@ -4,6 +4,7 @@ import 'dotenv/config'
 import bcrypt from 'bcrypt'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
+import cors from 'cors'
 
 // Schema here
 import User from './Schema/User.js'
@@ -16,7 +17,8 @@ let PORT=3000
 
 
 app.use(express.json())
-
+app.use(express.urlencoded({extended: true}))
+app.use(cors())
 mongoose.connect(process.env.DB_LOCATION,{
     autoIndex : true
 })

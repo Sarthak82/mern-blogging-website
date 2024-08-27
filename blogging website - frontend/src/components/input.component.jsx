@@ -17,7 +17,7 @@ const InputBoxComponet = ({ name,type,id,value, placeholder,icon })=>{
         <i className={"fi "+icon+" input-icon"}></i>
         {
 
-            type == "password" ? <i class={"fi fi-rr-eye"+ (!passwordVisible ? "-crossed ":" ")+"input-icon left-[auto] right-4 cursor-pointer"} 
+            type == "password" ? <i className={"fi fi-rr-eye"+ (!passwordVisible ? "-crossed ":" ")+"input-icon left-[auto] right-4 cursor-pointer"} 
             onClick={()=>{
                 setPasswordVisible(!passwordVisible)
             }}></i> : ""
