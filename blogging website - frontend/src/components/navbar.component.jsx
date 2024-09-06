@@ -1,11 +1,25 @@
 import {Link , Outlet} from "react-router-dom"
 import logo from '../imgs/logo.png'
-import { useState } from "react"
+import { useContext, useState } from "react"
+import { UserContext } from "../App"
+import UserNavigationPanel from "./user-navigation.component"
 
 const Navbar = ()=>{
 
     const [searchBoxVisibility, setSearchBoxVisibility]= useState(false)
     
+    const [userNavPanel, setUserNavPanel] = useState(false)
+
+    const {userAuth, userAuth:{access_token, profile_img}} = useContext(UserContext)
+
+    const handleUseNavPanel =()=>{
+        setUserNavPanel(!userNavPanel)
+    }
+
+    const handleBlur=()=>{
+        setTimeout(()=>setUserNavPanel(!userNavPanel), 200)
+    }
+
     return(
         <>
             <nav className="navbar">
@@ -39,13 +53,39 @@ const Navbar = ()=>{
                         <p>writer</p>
                     </Link>
 
-                    <Link to='/signin' className="btn-dark ">
-                        <p>sign in</p>
-                    </Link>
-                    <Link to='/signup' className="btn-light hidden md:block">
-                        <p>sign Up</p>
-                    </Link>
+                    {
+                        access_token ? 
+                        <>
+                            <Link to="/dashboard/notification">
+                                <button className="w-12 h-12 rounded-full bg-grey relative hover:bg-black/10">
+                                    <i className="fi fi-rr-bell text-2xl block mt-1"></i>
+                                </button>
+                            </Link>
+                        
+                            <div className="relative" onClick={handleUseNavPanel} onBlur={handleBlur}>
+                                <button className="w-12 h-12 mt-1">
+                                    <img src={profile_img} className="w-full h-full object-cover rounded-full"/>
+                                </button>
+                            </div>
+                        </>
+                        :
+                        <>   
+                        <Link to='/signin' className="btn-dark ">
+                            <p>sign in</p>
+                        </Link>
+                        <Link to='/signup' className="btn-light hidden md:block">
+                            <p>sign Up</p>
+                        </Link>
+                        </>
+                    }
                 </div>
+
+            
+            {
+                userNavPanel ? <UserNavigationPanel/> :""
+            }
+
+               
             </nav>
 
             <Outlet/>
