@@ -5,20 +5,35 @@ import bcrypt from 'bcrypt'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
+import admin from 'firebase-admin'
+import serviceAccountKey from "./mern-stack-blogging-webs-de980-firebase-adminsdk-cy3e5-a3271e2117.json" assert {type: "json"}
+import { getAuth } from 'firebase-admin/auth'
+
 
 // Schema here
 import User from './Schema/User.js'
 
+
 let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
+
+
+
 
 const app = express()
 let PORT=3000
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccountKey)
+});
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:5173', // Update with your frontend URL
+    methods: 'GET,POST',
+    allowedHeaders: 'Content-Type,Authorization'
+}));
 mongoose.connect(process.env.DB_LOCATION,{
     autoIndex : true
 })
@@ -120,6 +135,45 @@ app.post('/signin', async(req,res)=>{
         return res.status(400).json({error: "email not found"})
     })
 
+})
+
+app.post('/google-auth', async(req,res)=>{
+    let {access_token} = req.body
+
+    getAuth()
+    .verifyIdToken(access_token).then(async(decodedUser)=>{
+        let {email,name,picture} = decodedUser
+        picture = picture.replace('s96-c', 's384-c')
+
+        let user = await user.findOne({"personal_info.email": email}).select("personal_info.fullname personal_info.username personal_info.profile_img google_auth").then((u)=>{
+            return u || null
+        }).catch(error=>{
+            return res.status(500).json({error: error.message})
+        })
+
+        if(user){
+            if(!user.google_auth){
+                return res.status(403).json({error: "Email was signed up without google. Please login in with password to access the account"})
+            }
+        }else{
+                let username = await genrateUsername(email)
+                user= new User({
+                    personal_info:{fullname: name, email,profile_img: picture, username},
+                    google_auth: true
+                })
+                
+                await user.save().then((u)=>{
+                    user=u
+                }).catch((err)=>{
+                    return res.status(500).json({error: err.message})
+                })
+
+        }
+
+        return res.status(200).json(formatDatatoSend(user))
+    }).catch((err)=>{
+        return res.status(500).json({error: "Failed to Autheticate you with google. Try again with another method"})
+    })
 })
 
 app.listen(PORT, () => {

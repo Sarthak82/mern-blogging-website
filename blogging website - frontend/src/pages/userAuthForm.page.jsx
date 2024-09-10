@@ -8,6 +8,7 @@ import {Toaster, toast} from 'react-hot-toast'
 import axios from 'axios'
 import { storeInSession } from '../common/session'
 import { UserContext } from '../App'
+import { authWithGoogle } from '../common/firebase'
 
 const UserAuthForm = ({ type })=>{
 
@@ -16,6 +17,7 @@ const UserAuthForm = ({ type })=>{
     let{userAuth: {access_token}, setUserAuth} = useContext(UserContext)
 
     console.log(access_token)
+    
     const userAuthThroughServer = (serverRoute, formData)=>{
 
         axios.post(import.meta.env.VITE_SERVER_DOMAIN + serverRoute, formData)
@@ -71,6 +73,24 @@ const UserAuthForm = ({ type })=>{
 
     }
 
+    const handleGoogleAuth = (e) => {
+        e.preventDefault();
+    
+       authWithGoogle().then(user=>{
+        
+        console.log(user)
+        let serverRoute = "/google-auth"
+        let formData = {
+            access_token : user.accessToken
+        }
+
+        userAuthThroughServer(serverRoute, formData)
+       }).catch(error=>{
+        toast.error(error.message)
+        return console.log(error)
+       })
+    };
+
 
     return(
 
@@ -125,7 +145,7 @@ const UserAuthForm = ({ type })=>{
                             
                         </div>  
 
-                        <button className="btn-dark flex items-center justify-center gap-4 w-[90%]">
+                        <button className="btn-dark flex items-center justify-center gap-4 w-[90%]" onClick={handleGoogleAuth}>
                             <img src={googleIcon} className="w-5"/>
                             continue with google
                         </button>
