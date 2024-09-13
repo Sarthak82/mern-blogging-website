@@ -27,5 +27,6 @@ export const authWithGoogle = async () => {
     })).catch((error)=>{
         console.log(error)
     })
+    
     return user
 };
