@@ -8,6 +8,7 @@ import cors from 'cors'
 import admin from 'firebase-admin'
 import serviceAccountKey from "./mern-stack-blogging-webs-de980-firebase-adminsdk-cy3e5-a3271e2117.json" assert {type: "json"}
 import { getAuth } from 'firebase-admin/auth'
+import aws from 'aws-sdk'
 
 
 // Schema here
@@ -34,9 +35,33 @@ app.use(cors({
     methods: 'GET,POST',
     allowedHeaders: 'Content-Type,Authorization'
 }));
+
 mongoose.connect(process.env.DB_LOCATION,{
     autoIndex : true
 })
+
+// setting up s3 bucket
+const s3 = new aws.S3({
+    region: 'us-east-1',
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+})
+
+const genrateUploadURL= async ()=>{
+
+    const date = new Date()
+    const imageName = `${nanoid()}-${date.getTime()}.jpeg`;
+    
+    return await s3.getSignedUrlPromise('putObject',{
+        Bucket: 'blogging-website-app2212',
+        Key: imageName,
+        Expires: 1000,
+        ContentType: 'image/jpeg'
+    })
+
+
+
+}
 
 const formatDatatoSend = (user)=>{
 
@@ -60,6 +85,14 @@ const genrateUsername = async(email)=>{
 
     return username
 }
+
+app.get('/get-upload-url', (req,res)=>{
+    genrateUploadURL().then(url=> res.status(200).json({uploadURL : url})).catch(error =>{
+        console.log(error.message)
+        return res.status(500).json({error : err.message})
+    })
+})
+
 
 app.post('/signup',(req,res)=>{
     
