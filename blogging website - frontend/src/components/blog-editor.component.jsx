@@ -48,10 +48,13 @@ const BLogEditor = ()=>{
                     toast.success("Image Uploaded")
 
                     setBlog({ ...blog, banner:url })
+                }else{
+                    toast.dismiss(loadingToast)
+                    toast.error("Error Uploading Image")
                 }
             }).catch(error =>{
                 toast.dismiss(loadingToast)
-                toast.error("Error Uploading Image")
+                toast.error({error:error.message})
             })
         }
     }
