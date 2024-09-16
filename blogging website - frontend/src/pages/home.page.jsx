@@ -5,10 +5,14 @@ import axios from "axios";
 import Loader from "../components/loader.component";
 import BlogPostcard from "../components/blog-post.component";
 import MinimalBlogPost from "../components/nobanner-blog-post.component";
+import { activeTabRef } from "../components/inpage-navigation.component";
+import NoDataMessage from "../components/nodata.component";
 
 const HomePage = () => {
   let [blogs, setBlogs] = useState(null);
   let [trendingBlogs, setTrendingBlogs] = useState(null);
+  let [pageState, setPageState] = useState("home");
+
   let categories = [
     "programming",
     "travel",
@@ -17,9 +21,37 @@ const HomePage = () => {
     "tech",
     "japan",
   ];
-  const fetchLatestBlogs = () => {
+
+  const loadBlogByCategory = (e) => {
+    let category = e.target.innerText.toLowerCase();
+
+    setBlogs(null);
+
+    if (pageState == category) {
+      setPageState("home");
+      return;
+    }
+
+    setPageState(category);
+  };
+
+  const fetchLatestBlogs = ({page = 1}) => {
     axios
-      .get(import.meta.env.VITE_SERVER_DOMAIN + "/latest-blogs")
+      .post(import.meta.env.VITE_SERVER_DOMAIN + "/latest-blogs", {page})
+      .then(({ data }) => {
+
+        console.log(data);
+
+        setBlogs(data.blogs);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const fetchBlogByCategory = () => {
+    axios
+      .post(import.meta.env.VITE_SERVER_DOMAIN + "/search-blogs", {
+        tag: pageState,
+      })
       .then(({ data }) => {
         setBlogs(data.blogs);
       })
@@ -36,9 +68,18 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    fetchLatestBlogs();
-    fetchTrendingBlogs();
-  }, []);
+    activeTabRef.current.click();
+
+    if (pageState == "home") {
+      fetchLatestBlogs();
+    } else {
+      fetchBlogByCategory();
+    }
+
+    if (!trendingBlogs) {
+      fetchTrendingBlogs();
+    }
+  }, [pageState]);
 
   return (
     <AnimationWrapper>
@@ -46,13 +87,13 @@ const HomePage = () => {
         {/* Latest blogs */}
         <div className="w-full">
           <InPageNavigation
-            routes={["home", "trending blogs"]}
+            routes={[pageState, "trending blogs"]}
             defaulthidden={["trending blogs"]}
           >
             <>
               {blogs === null ? (
                 <Loader />
-              ) : (
+              ) : blogs.length ? (
                 blogs.map((blog, i) => {
                   return (
                     <AnimationWrapper
@@ -66,12 +107,14 @@ const HomePage = () => {
                     </AnimationWrapper>
                   );
                 })
+              ) : (
+                <NoDataMessage messsage="No Blog Published" />
               )}
             </>
 
             {trendingBlogs === null ? (
               <Loader />
-            ) : (
+            ) : trendingBlogs.length ? (
               trendingBlogs.map((blog, i) => {
                 return (
                   <AnimationWrapper
@@ -82,6 +125,8 @@ const HomePage = () => {
                   </AnimationWrapper>
                 );
               })
+            ) : (
+              <NoDataMessage messsage="No Trending Published" />
             )}
           </InPageNavigation>
         </div>
@@ -98,7 +143,14 @@ const HomePage = () => {
               <div className="flex gap-3 flex-wrap">
                 {categories.map((category, i) => {
                   return (
-                    <button className="tag" key={i}>
+                    <button
+                      onClick={loadBlogByCategory}
+                      className={
+                        "tag " +
+                        (pageState == category ? "bg-black text-white" : "")
+                      }
+                      key={i}
+                    >
                       {category}
                     </button>
                   );
@@ -112,7 +164,7 @@ const HomePage = () => {
               </h1>
               {trendingBlogs === null ? (
                 <Loader />
-              ) : (
+              ) : trendingBlogs.length ? (
                 trendingBlogs.map((blog, i) => {
                   return (
                     <AnimationWrapper
@@ -123,6 +175,8 @@ const HomePage = () => {
                     </AnimationWrapper>
                   );
                 })
+              ) : (
+                <NoDataMessage messsage="No Trending Published" />
               )}
             </div>
           </div>
