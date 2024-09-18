@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom'
 import logo from "../imgs/logo.png"
@@ -22,11 +22,13 @@ const BLogEditor = ()=>{
 
     let { userAuth: { access_token }} = useContext(UserContext)
 
+    let {blog_id} = useParams()
+
     useEffect(()=>{
         if(!textEditor.isReady){
             setTextEditor( new EditorJS({
                 holder: 'textEditor',
-                data: content,
+                data: Array.isArray(content) ? content[0]:content,
                 tools: tools,
                 placeholder: "Let's write a greate Story Here",
         }))
@@ -121,7 +123,7 @@ const BLogEditor = ()=>{
 
                 let blogObj ={title, banner, content, tags, des , draft: true}
 
-                axios.post(import.meta.env.VITE_SERVER_DOMAIN+'/create-blog',blogObj, {
+                axios.post(import.meta.env.VITE_SERVER_DOMAIN+'/create-blog',{...blogObj,id:blog_id}, {
                     headers: {
                         'Authorization': `Bearer ${access_token}`
                     }
