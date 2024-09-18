@@ -31,7 +31,8 @@ const BlogPage =()=>{
     let {blog_id} = useParams()
     const [blog,setBlog]= useState(blogStructure)
     const [similarBlogs, setSimilarBlogs] = useState(null)
-    let [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(true)
+    const [isLikedByUser, setIsLikedByUser] = useState(false)
 
 
     let {title,content,banner,author:{personal_info:{fullname,username:author_username,profile_img}}, publishedAt,tags} = blog
@@ -44,7 +45,6 @@ const BlogPage =()=>{
             axios.post(import.meta.env.VITE_SERVER_DOMAIN+'/search-blogs',{tag:blog.tags[0], limit:6, eliminate_blog:blog_id})
             .then(({data})=>{
                 setSimilarBlogs(data.blogs)
-                console.log(data.blogs)
             })
             .catch(err=>console.log(err))
 
@@ -75,7 +75,7 @@ const BlogPage =()=>{
             {
                 loading ? <Loader/>
                 :
-                <BlogContext.Provider value={{blog,setBlog}}>
+                <BlogContext.Provider value={{blog,setBlog, isLikedByUser, setIsLikedByUser}}>
                     <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
 
                         <img src={banner} className="aspect-video"/>

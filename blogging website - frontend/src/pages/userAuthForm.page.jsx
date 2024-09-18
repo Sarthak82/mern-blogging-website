@@ -15,8 +15,6 @@ const UserAuthForm = ({ type })=>{
     const authForm = useRef()
 
     let{userAuth: {access_token}, setUserAuth} = useContext(UserContext)
-
-    console.log(access_token)
     
     const userAuthThroughServer = (serverRoute, formData)=>{
 
@@ -68,7 +66,6 @@ const UserAuthForm = ({ type })=>{
             return toast.error("Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letter")
         }
 
-        console.log(formData)
         userAuthThroughServer(serverRoute, formData)
 
     }

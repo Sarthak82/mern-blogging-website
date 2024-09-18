@@ -9,11 +9,11 @@ import admin from 'firebase-admin'
 import serviceAccountKey from "./mern-stack-blogging-webs-de980-firebase-adminsdk-cy3e5-a3271e2117.json" assert {type: "json"}
 import { getAuth } from 'firebase-admin/auth'
 import aws from 'aws-sdk'
-import Blog from './Schema/Blog.js'
 
 // Schema here
 import User from './Schema/User.js'
-
+import Blog from './Schema/Blog.js'
+import Notification from './Schema/Notification.js'
 
 let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
@@ -446,6 +446,55 @@ app.post('/get-blog', (req,res)=>{
     }).catch(error=>{
         return res.status(500).json({error: error.message})
     })
+})
+
+app.post('/like-blog', verifyJWT, (req,res)=>{
+    let user_id = req.user
+
+    let {_id, isLikedByUser} = req.body
+
+    let incrementVal = !isLikedByUser ? 1 : -1
+
+    Blog.findOneAndUpdate({_id},{$inc:{"activity.total_likes":incrementVal}})
+    .then(blog=>{
+        if(!isLikedByUser){
+            let like = new Notification(
+                {
+                    type: "like",
+                    blog:_id,
+                    notification_for:blog.author,
+                    user:user_id
+                }
+            )
+
+            like.save().then(notification=>{
+                res.status(200).json({liked_by_user: true})
+            })
+        }else{
+            Notification.findOneAndDelete({user:user_id, type:"like",blog:_id})
+            .then(result=>{
+                res.status(200).json({liked_by_user: false})
+            })
+            .catch(err=>{
+                res.status(500).json({error: err.message})
+            })
+        }
+    })
+})
+
+app.post('/isLiked-by-user',verifyJWT, (req,res)=>{
+    let user_id = req.user
+    let { _id } = req.body
+    Notification.exists({user:user_id, type:"like",blog:_id})
+    .then(result=>{
+        return res.status(200).json({result})
+    })
+    .catch(err=>{
+        return res.status(500).json({error: err.message})
+    })
+
+
+
 })
 
 
