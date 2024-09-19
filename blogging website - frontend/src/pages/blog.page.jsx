@@ -9,6 +9,7 @@ import BlogInteraction from "../components/blog-interaction.component";
 import { createContext } from "react";
 import BlogPostcard from "../components/blog-post.component";
 import BlogContent from "../components/blog-content.component";
+import CommentContainer from "../components/comments.component";
 
 export const blogStructure = {
     title : '',
@@ -33,7 +34,8 @@ const BlogPage =()=>{
     const [similarBlogs, setSimilarBlogs] = useState(null)
     const [loading, setLoading] = useState(true)
     const [isLikedByUser, setIsLikedByUser] = useState(false)
-
+    const [commentWrapper,setCommentWrapper] = useState(false)
+    const [totalParentCommentsLoaded,setTotalParentCommentsLoaded] = useState(0)
 
     let {title,content,banner,author:{personal_info:{fullname,username:author_username,profile_img}}, publishedAt,tags} = blog
 
@@ -61,6 +63,9 @@ const BlogPage =()=>{
         setBlog(blogStructure)
         setSimilarBlogs(null)
         setLoading(true)
+        setIsLikedByUser(false)
+        // setCommentWrapper(false)
+        setTotalParentCommentsLoaded(0) 
     }
 
 
@@ -75,7 +80,9 @@ const BlogPage =()=>{
             {
                 loading ? <Loader/>
                 :
-                <BlogContext.Provider value={{blog,setBlog, isLikedByUser, setIsLikedByUser}}>
+                <BlogContext.Provider value={{blog,setBlog, isLikedByUser, setIsLikedByUser,commentWrapper, setCommentWrapper, totalParentCommentsLoaded, setTotalParentCommentsLoaded }}>
+                    
+                    <CommentContainer/>
                     <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
 
                         <img src={banner} className="aspect-video"/>

@@ -14,6 +14,8 @@ import aws from 'aws-sdk'
 import User from './Schema/User.js'
 import Blog from './Schema/Blog.js'
 import Notification from './Schema/Notification.js'
+import Comment from './Schema/Comment.js'
+
 
 let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
@@ -497,6 +499,47 @@ app.post('/isLiked-by-user',verifyJWT, (req,res)=>{
 
 })
 
+app.post('/add-comment', verifyJWT, (req,res)=>{
+    let user_id = req.user
+    let {_id, comment , blog_author} = req.body
+
+    if(!comment.length){
+        return res.status(403).json({error: "Comment is required"})
+    }
+
+
+   
+    let commentObj = new Comment({
+        blog_id : _id,
+        blog_author,
+        comment,
+        commented_by:user_id,
+    })
+
+    commentObj.save().then(commentfile=>{
+        let { comment, commentedAt, children } = commentfile
+        Blog.findOneAndUpdate({_id}, {$push:{"comments": commentfile._id},$inc:{'activity.total_comments':1},"activity.total_parent_comments":1})
+        .then(blog=>{
+            console.log("New Comment created")
+        })
+        .catch(err=>{
+            return res.status(500).json({error: err.message})
+        })
+
+        let notificationObj = new Notification({
+            type: "comment",
+            blog:_id,
+            notification_for:blog_author,
+            user:user_id,
+            comment:commentObj._id
+        }) 
+
+        notificationObj.save().then(notification=>{
+            console.log("New notification created")
+        })
+        return res.status(200).json({comment, commentedAt,_id:commentfile.id,user_id, children})
+    })
+})
 
 app.listen(PORT, () => {
     console.log('Server is running on port 3000')
