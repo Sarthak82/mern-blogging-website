@@ -501,22 +501,26 @@ app.post('/isLiked-by-user',verifyJWT, (req,res)=>{
 
 app.post('/add-comment', verifyJWT, (req,res)=>{
     let user_id = req.user
-    let {_id, comment , blog_author} = req.body
+    let {_id, comment , blog_author, replying_to} = req.body
 
     if(!comment.length){
         return res.status(403).json({error: "Comment is required"})
     }
 
-    let commentObj = new Comment({
+    let commentObj = {
         blog_id : _id,
         blog_author,
         comment,
         commented_by:user_id,
-    })
+    }
 
-    commentObj.save().then(commentfile=>{
+    if(replying_to){
+        commentObj.parent=replying_to
+    }
+
+    new Comment(commentObj).save().then(async commentfile=>{
         let { comment, commentedAt, children } = commentfile
-        Blog.findOneAndUpdate({_id}, {$push:{"comments": commentfile._id},$inc:{'activity.total_comments':1,"activity.total_parent_comments":1}})
+        Blog.findOneAndUpdate({_id}, {$push:{"comments": commentfile._id},$inc:{'activity.total_comments':1,"activity.total_parent_comments": replying_to? 0 : 1}})
         .then(blog=>{
             console.log("New Comment created")
         })
@@ -525,12 +529,24 @@ app.post('/add-comment', verifyJWT, (req,res)=>{
         })
 
         let notificationObj = new Notification({
-            type: "comment",
+            type: replying_to ? "reply" : "comment",
             blog:_id,
             notification_for:blog_author,
             user:user_id,
             comment:commentObj._id
         }) 
+
+        if(replying_to){
+            notificationObj.replied_on_comment=replying_to
+
+            await Comment.findOneAndUpdate({_id:replying_to}, {$push:{children:commentfile._id}})
+            .then(replyingToCommentDoc=>{
+                notificationObj.notification_for= replyingToCommentDoc.commented_by
+            })
+
+
+            
+        }
 
         notificationObj.save().then(notification=>{
             console.log("New notification created")
