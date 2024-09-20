@@ -10,6 +10,7 @@ import { createContext } from "react";
 import BlogPostcard from "../components/blog-post.component";
 import BlogContent from "../components/blog-content.component";
 import CommentContainer from "../components/comments.component";
+import { fetchComments } from "../components/comments.component";
 
 export const blogStructure = {
     title : '',
@@ -42,15 +43,19 @@ const BlogPage =()=>{
 
     const fetchBlog=()=>{
         axios.post(import.meta.env.VITE_SERVER_DOMAIN+'/get-blog',{blog_id})
-        .then(({data:{blog}})=>{
+        .then(async({data:{blog}})=>{
+
+            blog.comments = await fetchComments({blog_id:blog._id, setParentCommentCountFun:setTotalParentCommentsLoaded})
+
+
+            setBlog(blog)
+
 
             axios.post(import.meta.env.VITE_SERVER_DOMAIN+'/search-blogs',{tag:blog.tags[0], limit:6, eliminate_blog:blog_id})
             .then(({data})=>{
                 setSimilarBlogs(data.blogs)
             })
-            .catch(err=>console.log(err))
 
-            setBlog(blog)
             setLoading(false)
         })
         .catch(err=>{
@@ -64,7 +69,6 @@ const BlogPage =()=>{
         setSimilarBlogs(null)
         setLoading(true)
         setIsLikedByUser(false)
-        // setCommentWrapper(false)
         setTotalParentCommentsLoaded(0) 
     }
 

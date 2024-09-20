@@ -507,8 +507,6 @@ app.post('/add-comment', verifyJWT, (req,res)=>{
         return res.status(403).json({error: "Comment is required"})
     }
 
-
-   
     let commentObj = new Comment({
         blog_id : _id,
         blog_author,
@@ -518,7 +516,7 @@ app.post('/add-comment', verifyJWT, (req,res)=>{
 
     commentObj.save().then(commentfile=>{
         let { comment, commentedAt, children } = commentfile
-        Blog.findOneAndUpdate({_id}, {$push:{"comments": commentfile._id},$inc:{'activity.total_comments':1},"activity.total_parent_comments":1})
+        Blog.findOneAndUpdate({_id}, {$push:{"comments": commentfile._id},$inc:{'activity.total_comments':1,"activity.total_parent_comments":1}})
         .then(blog=>{
             console.log("New Comment created")
         })
@@ -538,6 +536,24 @@ app.post('/add-comment', verifyJWT, (req,res)=>{
             console.log("New notification created")
         })
         return res.status(200).json({comment, commentedAt,_id:commentfile.id,user_id, children})
+    })
+})
+
+
+app.post("/get-blog-comments",(req,res)=>{
+    let {blog_id,skip}=req.body
+    let maxLimit=5
+
+    Comment.find({blog_id, isReply: false})
+    .populate("commented_by", "personal_info.username personal_info.fullname personal_info.profile_img")
+    .skip(skip)
+    .limit(maxLimit)
+    .sort({"commentedAt":-1})
+    .then(comments=>{
+        return res.status(200).json({comments})
+    })
+    .catch(err=>{
+        return res.status(500).json({error: err.message})
     })
 })
 
